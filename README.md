@@ -4,7 +4,7 @@ Simple project to scrape website urls and phone numbers of businesses that aren'
 
 ##TODO
 ------
-1. Query Yelp correctly for a telephone number
+~~1. Query Yelp correctly for a telephone number~~
 2. Get website url from yellowpages
 3. check if website is mobile optimized
 4. Save to csv
