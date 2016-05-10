@@ -9,7 +9,7 @@ Simple project to scrape website urls and phone numbers of businesses that aren'
 3. check if website is mobile optimized
 4. Save to csv
 
-##Usage
+##Setup
 -------
 Make sure to make a file with your yelp developer keys: **yelp.json**. The format for that is as follows, in json of course.
 
