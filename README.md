@@ -1,8 +1,9 @@
-#yelp_scraper
-Simple project to scrape websites of businesses that isn't mobile optimized. 
+#Business Scraper
+Simple project to scrape website urls and phone numbers of businesses that aren't mobile optimized. I favored yelp's results from their API for the simplicity of defining location. Plus whoever is on there would already have some kind of online presence.  
 
 ##TODO
-*Query Yelp correctly for a web address
+*Query Yelp correctly for a telephone number
+*Get website url from yellowpages
 *check if website is mobile optimized
 *Save to csv
 
