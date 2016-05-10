@@ -1,6 +1,10 @@
 import sys 
 import io
 import json
+import urllib2
+
+from yelp.client import Client 
+from yelp.oauth1_authenticator import Oauth1Authenticator
 
 term= sys.argv[1] 
 place= sys.argv[2] 
@@ -22,12 +26,26 @@ params = {
 
 results = client.search(place, **params)
 
-print(results.total + " results for " + term + " in " + place)
-print(results.business[0].name + " is the first item on the list.")
-
-# iterate array and extract 
+print(str(results.total) + " results for " + term + " in " + place)
 
 
+# YellowPages creds
+with io.open('yp.json') as cred:
+	yp_creds = json.load(cred)
+	
+#data = json.load(urllib2.urlopen('http://someurl/path/to/json'))
+
+# iterate array and extract the ones that have a web url in their yellowpages listings. 
+for i in range(10):
+	print("Getting data for " + results.businesses[i].name)
+	term = results.businesses[i].phone
+
+	data = json.load(urllib2.urlopen("http://api2.yp.com/listings/v1/search?format=json&key=" + yp_creds["API_Key"] + "&searchloc=" + results.businesses[i].location.postal_code + "&term=" + term + "&phonesearch=true"))
+	if data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"] != '':
+		print(data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"])
+	else:
+		print("No website URL available for " + results.businesses[i].name)
+	print('')
 
 
 
