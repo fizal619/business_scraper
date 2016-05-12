@@ -6,8 +6,10 @@ import urllib2
 from yelp.client import Client 
 from yelp.oauth1_authenticator import Oauth1Authenticator
 
+from time import sleep
+
 term= sys.argv[1] 
-place= sys.argv[2] 
+place= sys.argv[2].split()
  
 
 # read API keys
@@ -21,13 +23,9 @@ with io.open('yelp.json') as cred:
 
 params = {
     'term': term,
+    'limit': '20',
     'lang': 'en'
 }
-
-results = client.search(place, **params)
-
-print(str(results.total) + " results for " + term + " in " + place)
-
 
 # YellowPages creds
 with io.open('yp.json') as cred:
@@ -36,16 +34,28 @@ with io.open('yp.json') as cred:
 #data = json.load(urllib2.urlopen('http://someurl/path/to/json'))
 
 # iterate array and extract the ones that have a web url in their yellowpages listings. 
-for i in range(10):
-	print("Getting data for " + results.businesses[i].name)
-	term = results.businesses[i].phone
+for i in range(int(place[0]), int(place[1])): 
+	
+	results = client.search(str(i), **params)
+	print(str(results.total) + " results for " + term + " in " + str(i))
+	print('Results have ' + str(len(results.businesses)) + ' items')
 
-	data = json.load(urllib2.urlopen("http://api2.yp.com/listings/v1/search?format=json&key=" + yp_creds["API_Key"] + "&searchloc=" + results.businesses[i].location.postal_code + "&term=" + term + "&phonesearch=true"))
-	if data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"] != '':
-		print(data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"])
-	else:
-		print("No website URL available for " + results.businesses[i].name)
-	print('')
+	for business in results.businesses:
+		print("Getting data for " + business.name)
+		term = business.phone
+		
+		try:
+			data = json.load(urllib2.urlopen("http://api2.yp.com/listings/v1/search?format=json&key=" + yp_creds["API_Key"] + "&searchloc=" + str(i) + "&term=" + term + "&phonesearch=true"))
+			try:
+				if data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"] != '':
+					print(data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"])
+			except TypeError:
+				print('No data, TypeError for some reason.')	
+		except IndexError, HTTPError:
+			print('No data returned.')
+
+		print('')
+		sleep(1)
 
 
 
