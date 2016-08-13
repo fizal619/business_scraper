@@ -1,61 +1,122 @@
-import sys 
-import io
-import json
-import urllib2
+from bs4 import BeautifulSoup
+import requests
+import time
+import csv
 
-from yelp.client import Client 
-from yelp.oauth1_authenticator import Oauth1Authenticator
+count = 0     # pages to traverse; max = 100
+term = "dentist"
+loc= 10010  #zipcode
 
-from time import sleep
+#storing the results here
+collection = [] #first req
+results = [["YELP URL", "Business Name", "Address", "Telephone", "URL", "AVERAGE RATING", "REVIEWS"]] #final results
+currentCount = 0
 
-term= sys.argv[1] 
-place= sys.argv[2].split()
- 
-
-# read API keys
-with io.open('yelp.json') as cred:
-	creds = json.load(cred)
-	auth = Oauth1Authenticator(**creds)
-	client = Client(auth)
-
-
-# make request for the search term store in array
-
-params = {
-    'term': term,
-    'limit': '20',
-    'lang': 'en'
-}
-
-# YellowPages creds
-with io.open('yp.json') as cred:
-	yp_creds = json.load(cred)
-	
-#data = json.load(urllib2.urlopen('http://someurl/path/to/json'))
-
-# iterate array and extract the ones that have a web url in their yellowpages listings. 
-for i in range(int(place[0]), int(place[1])): 
-	
-	results = client.search(str(i), **params)
-	print(str(results.total) + " results for " + term + " in " + str(i))
-	print('Results have ' + str(len(results.businesses)) + ' items')
-
-	for business in results.businesses:
-		print("Getting data for " + business.name)
-		term = business.phone
-		
+#extract the results from the page
+def resultsExtract(soup):
+	for link in soup.find_all('a'):
 		try:
-			data = json.load(urllib2.urlopen("http://api2.yp.com/listings/v1/search?format=json&key=" + yp_creds["API_Key"] + "&searchloc=" + str(i) + "&term=" + term + "&phonesearch=true"))
-			try:
-				if data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"] != '':
-					print(data["searchResult"]["searchListings"]["searchListing"][0]["websiteURL"])
-			except TypeError:
-				print('No data, TypeError for some reason.')	
-		except IndexError, HTTPError:
-			print('No data returned.')
+			#if it contains the biz-name class grab it's url
+			if((link.get('class')[0].find('biz-name') != -1) & (link.get('href').find('/biz') != -1)):
+				collection.append("http://www.yelp.com" + link.get('href'))
+		except Exception, e:
+			4+4
+#end resultsExtract
 
-		print('')
-		sleep(1)
+#info from the page
+def pageParse(link):
+	r = requests.get(link)
+	data = r.text
+	soup = BeautifulSoup(data, "html.parser")
+
+	#parse telephone
+	tel = ''
+	spans = soup.find_all('span')
+	for span in spans:
+		try:
+			if(span.get('class')[0] == 'biz-phone'):
+				tel = span.text.strip()
+				break
+		except Exception, e:
+			4+4
+	#end parse telephone
+
+	#parse biz website
+	web = ''
+	webs = soup.find_all('a')
+	for a in webs:
+		try:
+			if(a.text.find('.com') != -1):
+				web = a.text.strip()
+				break
+		except Exception, e:
+			4+4
+	#end website
+
+	#parse rating
+	rating = ''
+	items = soup.find_all('i')
+	for item in items:
+		try:
+			if(item.get('title').find('star') != -1):
+				rating = item.get('title')
+		except Exception, e:
+			4+4
+	#end rating
+
+	#parse telephone
+	reviewCount = ''
+	spans = soup.find_all('span')
+	for span in spans:
+		try:
+			if(span.get('itemprop') == 'reviewCount'):
+				reviewCount = span.text
+				break
+		except Exception, e:
+			4+4
+	#end parse telephone
+
+	result = [
+		link,
+		soup.find('h1').text.strip(),
+		soup.find('address').text.strip(),
+		tel,
+		web,
+		rating,
+		reviewCount
+	]
+
+	results.append(result)
+
+
+
+#grab multiple pages of results
+while(currentCount <= count):
+	url = "http://www.yelp.com/search?find_desc="+term+"&find_loc="+ str(loc) +"&start="+ str(currentCount*10)
+	r  = requests.get(url)
+	data = r.text
+	soup = BeautifulSoup(data, "html.parser")
+	print('Getting page: '+ str(currentCount))
+	resultsExtract(soup)
+	time.sleep(1)
+	currentCount+=1
+
+# print(collection)
+
+#Now to work on the entire collection
+while(len(collection) !=0 ):
+	link = collection.pop()
+	print('Getting data on '+ link)
+	pageParse(link)
+	time.sleep(1)
+
+# print(results)
+
+#output csv
+print('DONE! Check out output.csv for your results.')
+with open("output.csv", "wb") as f:
+  writer = csv.writer(f)
+  writer.writerows(results)
 
 
 
