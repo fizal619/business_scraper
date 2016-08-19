@@ -76,10 +76,18 @@ def pageParse(link):
 			4+4
 	#end parse telephone
 
+	#start address parse
+	address = ''
+	try:
+		address = soup.find('address').text.strip()
+	except Exception, e:
+		4+4
+	#parse address end
+
 	result = [
 		link,
 		soup.find('h1').text.strip(),
-		soup.find('address').text.strip(),
+		address,
 		tel,
 		web,
 		rating,
